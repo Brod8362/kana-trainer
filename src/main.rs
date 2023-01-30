@@ -14,9 +14,12 @@ fn main() {
         let layout = QVBoxLayout::new_0a();        
         widget.set_layout(&layout);
 
-        let _kana_input = KanaInputArea::new(&layout);
-        
+        let kana_input = KanaInputArea::new(&layout);
+
+
         widget.show();
+
+        kana_input.set_timer(30);
         QApplication::exec()
     })
 }
