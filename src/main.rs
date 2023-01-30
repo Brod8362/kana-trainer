@@ -3,7 +3,7 @@ mod symbol;
 
 use crate::input::KanaInputArea;
 use qt_widgets::{QApplication, QWidget, qt_core::qs, QVBoxLayout};
-use symbol::KanaSymbol;
+
 
 
 static WINDOW_TITLE: &str = "Kana Trainer";
