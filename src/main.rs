@@ -6,7 +6,6 @@ use qt_widgets::{QApplication, QWidget, qt_core::qs, QVBoxLayout};
 use symbol::KanaSymbol;
 
 
-
 static WINDOW_TITLE: &str = "Kana Trainer";
 
 fn main() {
@@ -17,9 +16,6 @@ fn main() {
         widget.set_layout(&layout);
 
         let kana_input = KanaInputArea::new(&layout);
-
-        let symbol = KanaSymbol::new_single(&String::from("ち"), &String::from("chi"));
-        kana_input.set_symbol(&symbol);
 
         widget.show();
 

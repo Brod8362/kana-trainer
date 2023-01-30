@@ -1,4 +1,8 @@
-#[derive(Clone)]
+use serde::{Deserialize, Serialize};
+
+
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct KanaSymbol {
     display: String,
     translations: Vec<String>

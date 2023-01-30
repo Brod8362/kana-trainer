@@ -2,9 +2,9 @@ use std::{rc::Rc, cell::RefCell};
 
 use cpp_core::{StaticUpcast, Ptr, Ref};
 use qt_widgets::{QWidget, QLineEdit, QHBoxLayout, QVBoxLayout, QProgressBar, QLabel, qt_gui::QFont};
-use qt_core::{QObject, QBox, QString, slot, SlotOfQString, SlotNoArgs, QTimer, qs, AlignmentFlag, QFlags};
+use qt_core::{QObject, QBox, QString, slot, SlotOfQString, SlotNoArgs, QTimer, qs, AlignmentFlag, QFlags, Signal, SignalOfBool};
 
-use crate::symbol::{KanaSymbol, self};
+use crate::symbol::{KanaSymbol};
 
 static TIMER_BAR_RESOLUTION: i32 = 100; //10 "ticks" per second
 
@@ -14,7 +14,8 @@ pub struct KanaInputArea {
     timer: QBox<QTimer>,
     timer_bar: QBox<QProgressBar>,
     line_edit: QBox<QLineEdit>,
-    current_symbol: RefCell<Option<KanaSymbol>>
+    current_symbol: RefCell<Option<KanaSymbol>>,
+    complete_signal: QBox<SignalOfBool>
 }
 
 impl StaticUpcast<QObject> for KanaInputArea {
@@ -42,6 +43,8 @@ impl KanaInputArea {
             symbol_label.set_font(&font);
             symbol_label.set_text(&qs(""));
             symbol_label.set_alignment(QFlags::from(AlignmentFlag::AlignCenter));
+
+            let complete_signal = SignalOfBool::new();
             
             let timer_box = QHBoxLayout::new_1a(&widget);
             let clock_label = QLabel::new();
@@ -68,7 +71,8 @@ impl KanaInputArea {
                 timer,
                 timer_bar,
                 line_edit,
-                current_symbol: RefCell::new(None)
+                current_symbol: RefCell::new(None),
+                complete_signal
             });
 
             this.init();
@@ -83,10 +87,10 @@ impl KanaInputArea {
     }
 
     #[slot(SlotNoArgs)]
-    pub unsafe fn on_time_update(self: &Rc<Self>) {
+    unsafe fn on_time_update(self: &Rc<Self>) {
         let value = self.timer_bar.value();
         if value <= 0 {
-            //TODO emit failure signal
+            self.complete_signal.emit(false);
             self.timer.stop();
             self.timer_bar.set_format(&qs("Time's Up!"));
         } else {
@@ -95,11 +99,20 @@ impl KanaInputArea {
         }
     }
 
+    #[slot(SlotNoArgs)]
+    unsafe fn on_enter_pressed(self: &Rc<Self>) {
+        let symb = KanaSymbol::new_single(&String::from("ち"), &String::from("chi"));
+        self.set_symbol(&symb);
+    }
+
     unsafe fn init(self: &Rc<Self>) {
         self.timer.timeout().connect(&self.slot_on_time_update());
         self.line_edit
             .text_edited()
             .connect(&self.slot_on_text_edited());
+        self.line_edit
+            .return_pressed()
+            .connect(&self.slot_on_enter_pressed());
     }
 
     #[slot(SlotOfQString)]
@@ -109,7 +122,7 @@ impl KanaInputArea {
             Some(symbol) => {
                 for trans in symbol.get_translations() {
                     if &text_content.to_std_string() == trans {
-                        //TODO emit success signal
+                        self.on_success(symbol);
                         self.set_timer(5);
                         self.line_edit.clear();
                     }
@@ -119,12 +132,18 @@ impl KanaInputArea {
         }
     }
 
+    pub unsafe fn on_success(self: &Rc<Self>, character: &KanaSymbol) {
+        println!("{} entered successfully", character.get_display());
+        self.complete_signal.emit(true);
+    }
+
     //Symbol managaement
 
     pub unsafe fn set_symbol(self: &Rc<Self>, symbol: &KanaSymbol) {
         let mut refer = self.current_symbol.borrow_mut();
         *refer = Some(symbol.clone());
         self.symbol_label.set_text(&qs(symbol.get_display()));
+        self.set_timer(10);
     }
 
     pub unsafe fn clear_symbol(self: &Rc<Self>) {
