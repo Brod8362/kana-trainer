@@ -1,8 +1,10 @@
-use std::rc::Rc;
+use std::{rc::Rc, cell::RefCell};
 
 use cpp_core::{StaticUpcast, Ptr, Ref};
 use qt_widgets::{QWidget, QLineEdit, QHBoxLayout, QVBoxLayout, QProgressBar, QLabel, qt_gui::QFont};
 use qt_core::{QObject, QBox, QString, slot, SlotOfQString, SlotNoArgs, QTimer, qs, AlignmentFlag, QFlags};
+
+use crate::symbol::{KanaSymbol, self};
 
 static TIMER_BAR_RESOLUTION: i32 = 100; //10 "ticks" per second
 
@@ -11,7 +13,8 @@ pub struct KanaInputArea {
     symbol_label: QBox<QLabel>,
     timer: QBox<QTimer>,
     timer_bar: QBox<QProgressBar>,
-    line_edit: QBox<QLineEdit>
+    line_edit: QBox<QLineEdit>,
+    current_symbol: RefCell<Option<KanaSymbol>>
 }
 
 impl StaticUpcast<QObject> for KanaInputArea {
@@ -37,7 +40,7 @@ impl KanaInputArea {
             font.set_point_size(32);
             let symbol_label = QLabel::new();
             symbol_label.set_font(&font);
-            symbol_label.set_text(&qs("ち"));
+            symbol_label.set_text(&qs(""));
             symbol_label.set_alignment(QFlags::from(AlignmentFlag::AlignCenter));
             
             let timer_box = QHBoxLayout::new_1a(&widget);
@@ -64,7 +67,8 @@ impl KanaInputArea {
                 symbol_label,
                 timer,
                 timer_bar,
-                line_edit
+                line_edit,
+                current_symbol: RefCell::new(None)
             });
 
             this.init();
@@ -82,6 +86,7 @@ impl KanaInputArea {
     pub unsafe fn on_time_update(self: &Rc<Self>) {
         let value = self.timer_bar.value();
         if value <= 0 {
+            //TODO emit failure signal
             self.timer.stop();
             self.timer_bar.set_format(&qs("Time's Up!"));
         } else {
@@ -98,9 +103,34 @@ impl KanaInputArea {
     }
 
     #[slot(SlotOfQString)]
-    unsafe fn on_text_edited(self: &Rc<Self>, string: Ref<QString>) {
-        println!("{}", string.to_std_string());
-        self.set_timer(5);
+    unsafe fn on_text_edited(self: &Rc<Self>, text_content: Ref<QString>) {
+        let refer = self.current_symbol.borrow();
+        match &(*refer) {
+            Some(symbol) => {
+                for trans in symbol.get_translations() {
+                    if &text_content.to_std_string() == trans {
+                        //TODO emit success signal
+                        self.set_timer(5);
+                        self.line_edit.clear();
+                    }
+                }
+            },  
+            None => {}
+        }
+    }
+
+    //Symbol managaement
+
+    pub unsafe fn set_symbol(self: &Rc<Self>, symbol: &KanaSymbol) {
+        let mut refer = self.current_symbol.borrow_mut();
+        *refer = Some(symbol.clone());
+        self.symbol_label.set_text(&qs(symbol.get_display()));
+    }
+
+    pub unsafe fn clear_symbol(self: &Rc<Self>) {
+        let mut refer = self.current_symbol.borrow_mut();
+        *refer = None;
+        self.symbol_label.clear();
     }
 
 }

@@ -1,7 +1,9 @@
 mod input;
+mod symbol;
 
 use crate::input::KanaInputArea;
 use qt_widgets::{QApplication, QWidget, qt_core::qs, QVBoxLayout};
+use symbol::KanaSymbol;
 
 
 
@@ -16,6 +18,8 @@ fn main() {
 
         let kana_input = KanaInputArea::new(&layout);
 
+        let symbol = KanaSymbol::new_single(&String::from("ち"), &String::from("chi"));
+        kana_input.set_symbol(&symbol);
 
         widget.show();
 
