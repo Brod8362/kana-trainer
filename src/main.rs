@@ -1,13 +1,8 @@
 mod input;
 mod symbol;
 
-use std::fs::File;
-
 use crate::input::KanaInputArea;
-use qt_core::slot;
 use qt_widgets::{QApplication, QWidget, qt_core::qs, QVBoxLayout};
-use symbol::{KanaSymbol, SymbolFamily};
-use rand::seq::SliceRandom;
 
 
 static WINDOW_TITLE: &str = "Kana Trainer";
@@ -20,12 +15,12 @@ fn main() {
         widget.set_layout(&layout);
 
         let hira_family = symbol::parse_symbols_from_file("hiragana.json").expect("failed to parse hiragana");
+        let kata_family = symbol::parse_symbols_from_file("katakana.json").expect("failed to parse katakana");
 
-        let kana_input = KanaInputArea::new(&layout);
+        let _kana_input = KanaInputArea::new(&layout, &vec![hira_family, kata_family]);
+
 
         widget.show();
-
-        kana_input.set_timer(30);
         QApplication::exec()
     })
 }

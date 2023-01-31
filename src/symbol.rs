@@ -1,7 +1,7 @@
 use std::fs::File;
 
 use serde::{Deserialize, Serialize};
-
+use rand::seq::SliceRandom;
 
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -10,10 +10,17 @@ pub struct KanaSymbol {
     translations: Vec<String>
 }
 
+
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct SymbolFamily {
     family: String,
     symbols: Vec<KanaSymbol>
+}
+
+impl SymbolFamily {
+    pub fn random_symbol<'a>(self: &'a Self) -> &'a KanaSymbol {
+        self.symbols.choose(&mut rand::thread_rng()).expect("cannot get symbol from empty family")
+    }
 }
 
 
