@@ -162,7 +162,6 @@ impl KanaInputArea {
     }
 
     pub unsafe fn on_success(self: &Rc<Self>, character: &KanaSymbol) {
-        println!("{} entered successfully", character.get_display());
         self.update_previous_symbol(character, true);
         self.complete_signal.emit(true);
         self.set_random_symbol();

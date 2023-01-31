@@ -16,8 +16,9 @@ fn main() {
 
         let hira_family = symbol::parse_symbols_from_file("hiragana.json").expect("failed to parse hiragana");
         let kata_family = symbol::parse_symbols_from_file("katakana.json").expect("failed to parse katakana");
+        let hangul_family = symbol::parse_symbols_from_file("hangul.json").expect("failed to parse hangul");
 
-        let _kana_input = KanaInputArea::new(&layout, &vec![hira_family, kata_family]);
+        let _kana_input = KanaInputArea::new(&layout, &vec![hangul_family, hira_family, kata_family]);
 
 
         widget.show();
