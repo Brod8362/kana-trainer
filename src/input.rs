@@ -8,8 +8,8 @@ use crate::symbol::{KanaSymbol, SymbolFamily};
 
 static TIMER_BAR_RESOLUTION: i32 = 100; //10 "ticks" per second
 
-static STYLE_SHEET_SUCCESS: &str = "{color: #00FF00}";
-static STYLE_SHEET_FAILURE: &str = "{color: #FF0000}";
+static STYLE_SHEET_SUCCESS: &str = "QLabel {color: #00FF00}";
+static STYLE_SHEET_FAILURE: &str = "QLabel {color: #FF0000}";
 
 pub struct KanaInputArea {
     widget: QBox<QWidget>,
@@ -107,7 +107,8 @@ impl KanaInputArea {
     unsafe fn on_time_update(self: &Rc<Self>) {
         let value = self.timer_bar.value();        
         if value <= 0 {
-            
+            let symbol = self.current_symbol.take();
+            self.current_symbol.set(symbol.clone());
             match symbol {
                 Some(symbol) => self.on_failure(&symbol),
                 None => {}
@@ -121,7 +122,11 @@ impl KanaInputArea {
 
     #[slot(SlotNoArgs)]
     unsafe fn on_enter_pressed(self: &Rc<Self>) {
-        //TODO: immediately mark current one as failed
+        match &self.current_symbol.take() {
+            Some(symbol) => self.on_failure(symbol),
+            None => {}
+        }
+        
         self.set_random_symbol()
     }
 
@@ -140,8 +145,10 @@ impl KanaInputArea {
         if self.timer_bar.value() <= 0 {
             return;
         }
-        
-        match *self.current_symbol.as_ptr() {
+        //TODO this sucks do this better
+        let symbol: Option<KanaSymbol> = self.current_symbol.take();
+        self.current_symbol.set(symbol.clone());
+        match symbol {
             Some(symbol) => {
                 for trans in symbol.get_translations() {
                     if &text_content.to_std_string() == trans {
